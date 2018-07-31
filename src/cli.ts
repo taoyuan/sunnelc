@@ -1,35 +1,29 @@
-import * as program from "commander";
+import * as prog from "caporal";
 import {createTcpClient} from "..";
 
 const pkg = require('../package.json');
 
 export function run(argv) {
-  program
-    .usage("[options]")
+  prog
     .version(pkg.version)
-    .option("-n, --host <host>", "Name or IP address of service host")
-    .option("-s, --port <n>", "Service port number", parseInt)
-    .option("-h, --relayHost <relayHost>", "Name or IP address of relay host")
-    .option("-r, --relayPort <n>", "Relay port number", parseInt)
-    .option("-c, --numConn [numConn]","Number of connections to maintain with relay", 1)
+    .description('Start sunnel client')
+    .option("-l, --host <service-host>", "Name or IP address of service host", prog.STRING, undefined, true)
+    .option("-s, --port <service-port>", "Service port number", prog.INT, undefined, true)
+    .option("-h, --relay-host <relay-host>", "Name or IP address of relay server host", prog.STRING, undefined, true)
+    .option("-r, --relay-port <relay-port>", "Relay server port number", prog.INT, undefined, true)
+    .option("-c, --num-conn [num-conn]", "Number of connections to maintain with relay", prog.INT, 1)
     .option("-k, --secret [key]", "Secret key to send to relay host")
-    .option("-t, --tls [both]", "Use TLS", false)
-    .option("-u, --rejectUnauthorized [value]", "Do not accept invalid certificate", false)
-    .parse(argv);
+    .option("-t, --tls [both]", "Use TLS", undefined, false)
+    .option("-u, --reject-unauthorized [value]", "Do not accept invalid certificate", undefined, false)
+    .action((args, opts) => {
+      const client = createTcpClient(opts.host, opts.port, opts.relayHost, opts.relayPort, opts);
 
-  const options = {
-    numConn: program.numConn,
-    tls: program.tls,
-    secret: program.secret,
-    rejectUnauthorized: program.rejectUnauthorized
-  };
+      process.on("SIGINT", () => {
+        client.end();
+      });
+    });
 
-  const client = createTcpClient(program.host, program.port, program.relayHost, program.relayPort, options);
 
-  process.on("SIGINT", () => {
-    client.end();
-  });
-
-  return client;
+  prog.parse(argv)
 }
 
